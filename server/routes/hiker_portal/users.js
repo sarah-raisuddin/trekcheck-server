@@ -1,11 +1,14 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const router = express.Router();
-const jwt = require("jsonwebtoken");
-const pool = require("../../db");
-const generatePlaceholders = require("../util");
+import { Router } from "express";
+import pkg from "bcryptjs";
+import webtoken from "jsonwebtoken";
+import pool from "../../db.js";
+import generatePlaceholders from "../util.js";
 
-SECRET_KEY = "randomhash";
+const { hash, compare } = pkg;
+const router = Router();
+const { sign } = webtoken;
+
+const SECRET_KEY = "randomhash";
 
 router.post("/register", async (req, res) => {
   const { password, email, firstName, lastName, number, address } = req.body;
@@ -13,13 +16,13 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  fields = ["email", "first_name", "last_name", "password"];
+  const fields = ["email", "first_name", "last_name", "password"];
   number && fields.push("number");
   address && fields.push("address");
-  placeholders = generatePlaceholders(fields.length);
+  const placeholders = generatePlaceholders(fields.length);
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hash(password, 10);
     const query = `INSERT INTO users (${fields.join(
       ", "
     )}) VALUES (${placeholders}) RETURNING id`;
@@ -57,14 +60,14 @@ router.post("/login", async (req, res) => {
     }
 
     const user = result.rows[0];
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await compare(password, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
     // Generate JWT
-    const token = jwt.sign(
+    const token = sign(
       { userId: user.id, username: user.username },
       SECRET_KEY,
       { expiresIn: "1h" }
@@ -77,4 +80,4 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

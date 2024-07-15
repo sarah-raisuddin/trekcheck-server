@@ -1,4 +1,5 @@
-const { Pool } = require("pg");
+import pkg from "pg";
+const { Pool } = pkg;
 
 const pool = new Pool({
   user: "admin",
@@ -9,4 +10,4 @@ const pool = new Pool({
   options: "-c search_path=trekcheck",
 });
 
-module.exports = pool;
+export default pool;

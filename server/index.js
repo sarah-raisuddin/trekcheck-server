@@ -1,17 +1,19 @@
-const express = require("express");
-const bodyParser = require("body-parser");
+import express from "express";
+import bp from "body-parser";
+const { json } = bp;
 
 const app = express();
-app.use(bodyParser.json());
+app.use(json());
 const port = 3000;
 
 // PostgreSQL connection setup
-
-const registerRoutes = require("./routes/hiker_portal/users");
+import userRoutes from "./routes/hiker_portal/users.js";
+import trailRoutes from "./routes/sar_dashboard/trails.js";
+import tripPlanRoutes from "./routes/hiker_portal/trip_plans.js";
 
 // Mount routes
-app.use("/hiker_portal", registerRoutes); // Prefix all routes in registerRoutes with '/hiker_portal'
-
+app.use("/hiker_portal", [userRoutes, tripPlanRoutes]); // Prefix all routes in userRoutes with '/hiker_portal'
+app.use("/sar_dashboard", [trailRoutes]);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
