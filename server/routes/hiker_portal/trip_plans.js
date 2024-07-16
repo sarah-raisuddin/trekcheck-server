@@ -1,5 +1,7 @@
 import { Router } from "express";
 import pool from "../../db.js";
+import generatePlaceholders from "../util.js";
+import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
@@ -26,12 +28,12 @@ router.post("/trip_plans", async (req, res) => {
     "user_id",
     "start_date",
     "end_date",
+    "trail_id",
     "entry_point",
     "exit_point",
     "emergency_contact_name",
     "emergency_contact_number",
     "rfid_tag_uid",
-    "progress_tracking_link",
   ];
 
   const values = fields.map((field) => req.body[field]);
@@ -39,6 +41,10 @@ router.post("/trip_plans", async (req, res) => {
   if (values.includes(undefined) || values.includes(null)) {
     return res.status(400).json({ message: "All fields are required" });
   }
+
+  const trackingLink = uuidv4();
+  fields.push("progress_tracking_link");
+  values.push(trackingLink);
 
   try {
     const placeholders = generatePlaceholders(fields.length);

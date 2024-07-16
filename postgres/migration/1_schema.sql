@@ -29,23 +29,24 @@ CREATE TABLE trekcheck.TripPlans (
     user_id INT,
     start_date TIMESTAMP,
     end_date TIMESTAMP,
+    trail_id INT,
     entry_point INT,
     exit_point INT,
     emergency_contact_name VARCHAR(255),
     emergency_contact_number VARCHAR(15), -- Adjusted to VARCHAR for flexibility
     emergency_contact_email VARCHAR(255),
-    rfid_tag_uid VARCHAR(255) UNIQUE,
+    rfid_tag_uid VARCHAR(255),
     progress_tracking_link VARCHAR(255) UNIQUE,
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
     FOREIGN KEY (entry_point) REFERENCES trekcheck.Checkpoints(id),
-    FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id)
+    FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id),
+    FOREIGN KEY (trail_id) REFERENCES trekcheck.Trails(id)
 );
 
 CREATE TABLE trekcheck.CheckpointEntries (
     entry_id SERIAL PRIMARY KEY,
     checkpoint_id INT,
     time TIMESTAMP,
-    tag_id INT,
-    FOREIGN KEY (checkpoint_id) REFERENCES trekcheck.Checkpoints(id),
-    FOREIGN KEY (tag_id) REFERENCES trekcheck.TripPlans(id)
+    tag_id VARCHAR(255),
+    FOREIGN KEY (checkpoint_id) REFERENCES trekcheck.Checkpoints(id)
 );
