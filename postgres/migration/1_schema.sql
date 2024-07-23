@@ -1,5 +1,11 @@
 CREATE SCHEMA trekcheck;
 
+CREATE TABLE trekcheck.SARUsers (
+    id serial PRIMARY KEY,
+    email VARCHAR(255) UNIQUE,
+    password VARCHAR(255)
+);
+
 CREATE TABLE trekcheck.Users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
@@ -17,6 +23,7 @@ CREATE TABLE trekcheck.Trails (
 CREATE TABLE trekcheck.Checkpoints (
     id SERIAL PRIMARY KEY,
     checkpoint_order INT,
+    checkpoint_name VARCHAR(255),
     trail_id INT,
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
@@ -33,10 +40,11 @@ CREATE TABLE trekcheck.TripPlans (
     entry_point INT,
     exit_point INT,
     emergency_contact_name VARCHAR(255),
-    emergency_contact_number VARCHAR(15), -- Adjusted to VARCHAR for flexibility
+    emergency_contact_number VARCHAR(15), 
     emergency_contact_email VARCHAR(255),
     rfid_tag_uid VARCHAR(255),
     progress_tracking_link VARCHAR(255) UNIQUE,
+    archived BOOLEAN,
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
     FOREIGN KEY (entry_point) REFERENCES trekcheck.Checkpoints(id),
     FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id),
