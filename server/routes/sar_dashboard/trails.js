@@ -86,4 +86,47 @@ router.post("/checkpoints", async (req, res) => {
   }
 });
 
+router.put("/checkpoints/:id", async (req, res) => {
+  const fields = [
+    "checkpoint_order",
+    "trail_id",
+    "latitude",
+    "longitude",
+    "checkpoint_name",
+  ];
+  const values = fields.map((field) => req.body[field]);
+  const { id } = req.params;
+
+  // Validate required fields
+  if (values.includes(undefined) || values.includes(null)) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  // Additional validation (e.g., checking types) can be added here
+
+  try {
+    // Generate SET clause for the update query
+    const setClause = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+    const query = `UPDATE checkpoints SET ${setClause} WHERE id = $${
+      fields.length + 1
+    }`;
+
+    // Include the ID as the last value
+    const result = await pool.query(query, [...values, id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Checkpoint not found" });
+    }
+
+    res.status(200).json({
+      message: "Checkpoint updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating checkpoint:", error); // Improved error message
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default router;
