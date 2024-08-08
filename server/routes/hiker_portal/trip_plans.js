@@ -11,7 +11,13 @@ router.get("/trip_plans", async (req, res) => {
     return res.status(400).json({ message: "user_id is required" });
   }
   try {
-    const query = `select * from TripPlans where user_id = $1`;
+    const query = `
+      SELECT tp.*, t.name AS trail_name
+      FROM TripPlans tp
+      LEFT JOIN Trails t ON tp.trail_id = t.id
+      WHERE tp.user_id = $1;
+    `;
+
     const result = await pool.query(query, [user_id]);
 
     res.status(200).json({
