@@ -10,7 +10,20 @@ const { sign } = webtoken;
 
 const SECRET_KEY = "randomhash";
 
-// GET endpoint to fetch data from the database
+router.get("/users", async (req, res) => {
+  try {
+    const query = `select * from SARUsers`;
+    const result = await pool.query(query);
+
+    res.status(200).json({
+      users: result.rows,
+    });
+  } catch (error) {
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -48,12 +61,12 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { password, email } = req.body;
+  const { password, email, firstName, lastName, admin } = req.body;
   if (!password || !email) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  const fields = ["email", "password"];
+  const fields = ["email", "password", "first_name", "last_name", "admin"];
   const placeholders = generatePlaceholders(fields.length);
 
   try {
@@ -61,7 +74,13 @@ router.post("/register", async (req, res) => {
     const query = `INSERT INTO SARUsers (${fields.join(
       ", "
     )}) VALUES (${placeholders}) RETURNING id`;
-    const result = await pool.query(query, [email, hashedPassword]);
+    const result = await pool.query(query, [
+      email,
+      hashedPassword,
+      firstName,
+      lastName,
+      admin,
+    ]);
 
     res.status(201).json({
       message: "User registered successfully",
@@ -69,6 +88,31 @@ router.post("/register", async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.delete("/user/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+
+  try {
+    const query = `DELETE FROM SARUsers WHERE id = $1 RETURNING id`;
+    const result = await pool.query(query, [userId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User deleted successfully",
+      userId: result.rows[0].id,
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
