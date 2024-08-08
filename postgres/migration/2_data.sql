@@ -24,3 +24,5 @@ INSERT INTO trekcheck.CheckpointEntries (checkpoint_id, time, tag_id) VALUES
 (2, '2024-07-15 17:00:00', 1),
 (3, '2024-07-05 09:30:00', 2),
 (4, '2024-07-20 18:00:00', 2);
+
+

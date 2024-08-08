@@ -3,7 +3,10 @@ CREATE SCHEMA trekcheck;
 CREATE TABLE trekcheck.SARUsers (
     id serial PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
-    password VARCHAR(255)
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    password VARCHAR(255),
+    admin BOOLEAN
 );
 
 CREATE TABLE trekcheck.Users (
@@ -44,7 +47,7 @@ CREATE TABLE trekcheck.TripPlans (
     emergency_contact_email VARCHAR(255),
     rfid_tag_uid VARCHAR(255),
     progress_tracking_link VARCHAR(255) UNIQUE,
-    archived BOOLEAN,
+    archived BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
     FOREIGN KEY (entry_point) REFERENCES trekcheck.Checkpoints(id),
     FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id),
