@@ -3,9 +3,19 @@ const router = Router();
 import pool from "../../db.js";
 import generatePlaceholders from "../util.js";
 
+const errMsg500 = "oops";
+const handleError = (res, msg) => {
+  res.status(500).json({ message: msg });
+};
+
 router.get("/trails", async (req, res) => {
   try {
-    const query = `select * from trails`;
+    const query = `
+      SELECT t.*, json_agg(c) AS checkpoints
+      FROM trails t
+      LEFT JOIN checkpoints c ON c.trail_id = t.id
+      GROUP BY t.id;
+    `;
     const result = await pool.query(query);
 
     res.status(200).json({
@@ -14,6 +24,34 @@ router.get("/trails", async (req, res) => {
   } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/trailInfo/:id", async (req, res) => {
+  const trailId = parseInt(req.params.id, 10);
+
+  if (isNaN(trailId)) {
+    return res.status(400).json({ error: "Invalid trail ID" });
+  }
+
+  try {
+    const trailQuery = `SELECT * FROM trails WHERE id = $1`;
+    const trailResult = await pool.query(trailQuery, [trailId]);
+
+    if (trailResult.rows.length === 0) {
+      return res.status(404).json({ error: "Trail not found" });
+    }
+
+    const checkpointsQuery = `SELECT * FROM checkpoints WHERE trail_id = $1 ORDER BY checkpoint_order ASC`;
+    const checkpointsResult = await pool.query(checkpointsQuery, [trailId]);
+
+    res.status(200).json({
+      trail: trailResult.rows[0],
+      checkpoints: checkpointsResult.rows,
+    });
+  } catch (error) {
+    console.log(error);
+    handleError(res, errMsg500);
   }
 });
 
@@ -37,8 +75,37 @@ router.post("/trail", async (req, res) => {
       userId: result.rows[0].id,
     });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ message: "Internal server error" });
+    handleError(res, errMsg500);
+  }
+});
+
+router.put("/trails/:id", async (req, res) => {
+  const fields = ["name", "address"];
+  const values = fields.map((field) => req.body[field]);
+  const { id } = req.params;
+
+  if (values.includes(undefined) || values.includes(null)) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    const setStatement = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+    const query = `UPDATE trails SET ${setStatement} WHERE id = $${
+      fields.length + 1
+    }`;
+
+    const result = await pool.query(query, [...values, id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "trail not found" });
+    }
+
+    res.status(200).json({
+      message: "trail updated successfully",
+    });
+  } catch (error) {
+    handleError(res, errMsg500);
   }
 });
 
@@ -56,8 +123,7 @@ router.get("/checkpoints", async (req, res) => {
       checkpoints: result.rows,
     });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    handleError(res, errMsg500);
   }
 });
 
@@ -81,8 +147,7 @@ router.post("/checkpoints", async (req, res) => {
       checkpointId: result.rows[0].id,
     });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ message: "Internal server error" });
+    handleError(res, errMsg500);
   }
 });
 
@@ -97,25 +162,19 @@ router.put("/checkpoints/:id", async (req, res) => {
   const values = fields.map((field) => req.body[field]);
   const { id } = req.params;
 
-  // Validate required fields
   if (values.includes(undefined) || values.includes(null)) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  // Additional validation (e.g., checking types) can be added here
-
   try {
-    // Generate SET clause for the update query
-    const setClause = fields
+    const setStatement = fields
       .map((field, index) => `${field} = $${index + 1}`)
       .join(", ");
-    const query = `UPDATE checkpoints SET ${setClause} WHERE id = $${
+    const query = `UPDATE checkpoints SET ${setStatement} WHERE id = $${
       fields.length + 1
     }`;
 
-    // Include the ID as the last value
     const result = await pool.query(query, [...values, id]);
-
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "Checkpoint not found" });
     }
@@ -124,8 +183,7 @@ router.put("/checkpoints/:id", async (req, res) => {
       message: "Checkpoint updated successfully",
     });
   } catch (error) {
-    console.error("Error updating checkpoint:", error); // Improved error message
-    res.status(500).json({ message: "Internal server error" });
+    handleError(res, errMsg500);
   }
 });
 
