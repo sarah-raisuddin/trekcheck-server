@@ -52,11 +52,11 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const query = "SELECT password FROM users WHERE email = $1";
+    const query = "SELECT first_name, id, password FROM users WHERE email = $1";
     const result = await pool.query(query, [email]);
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Invalid email" });
     }
 
     const user = result.rows[0];
@@ -73,7 +73,11 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ message: "Login successful", token });
+    // Pass back the user ID for now until end point is defined for grabbing user id from token
+    const userId = user.id;
+    const firstName = user.first_name;
+
+    res.json({ message: "Login successful", token, userId, firstName });
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ message: "Internal server error" });
