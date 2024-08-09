@@ -157,7 +157,7 @@ router.put("/checkpoints/:id", async (req, res) => {
     "trail_id",
     "latitude",
     "longitude",
-    "checkpoint_name",
+    "name",
   ];
   const values = fields.map((field) => req.body[field]);
   const { id } = req.params;

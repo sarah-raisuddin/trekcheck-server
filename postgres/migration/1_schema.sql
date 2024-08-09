@@ -26,7 +26,7 @@ CREATE TABLE trekcheck.Trails (
 CREATE TABLE trekcheck.Checkpoints (
     id SERIAL PRIMARY KEY,
     checkpoint_order INT,
-    checkpoint_name VARCHAR(255),
+    name VARCHAR(255),
     trail_id INT,
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),

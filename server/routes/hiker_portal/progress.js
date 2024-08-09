@@ -44,7 +44,7 @@ router.post("/progress", async (req, res) => {
     .join(", ");
 
   const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
-      VALUES ${placeholders}`;
+    VALUES ${placeholders}`;
 
   try {
     const result = await pool.query(query, values);
@@ -63,26 +63,63 @@ router.get("/progress", async (req, res) => {
     return res.status(400).json({ message: "unique_link is required" });
   }
   try {
-    // select * from checkpoint entries
-    const query = `-- Use the WITH clause to make the query more readable
-                WITH rfid_cte AS (
-                    SELECT rfid_tag
-                    FROM trip_plan
-                    WHERE unique_tracking_link = $1
-                )
-                SELECT *
-                FROM checkpoint_entries
-                WHERE rfid_tag = (SELECT rfid_tag FROM rfid_cte);`;
+    // Updated SQL query to fetch both trip plan and checkpoint entries
+    const query = `
+      WITH rfid_cte AS (
+        SELECT rfid_tag_uid
+        FROM trekcheck.tripPlans
+        WHERE progress_tracking_link = $1
+        LIMIT 1
+      )
+      SELECT 
+        tp.*,  
+        ce.*  
+      FROM trekcheck.tripPlans tp
+      LEFT JOIN trekcheck.CheckpointEntries ce
+        ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
+      WHERE tp.progress_tracking_link = $1;`;
 
     const result = await pool.query(query, [unique_link]);
 
+    const tripPlan = result.rows.length > 0 ? result.rows[0] : null;
+    const checkpointEntries = result.rows.filter((row) => row.tag_id); // Adjust based on your data structure
+
     res.status(200).json({
-      trails: result.rows,
+      tripPlan,
+      checkpointEntries,
     });
   } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+export const fetchProgress = async ({ uniqueLink }) => {
+  // Replace with your API endpoint
+  const apiEndpoint = `/progress?unique_link=${encodeURIComponent(uniqueLink)}`;
+
+  try {
+    const response = await fetch(apiEndpoint, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Successfully retrieved progress", data);
+      return data.trails;
+    } else {
+      console.error(
+        "Error response from server:",
+        response.status,
+        response.statusText
+      );
+    }
+  } catch (error) {
+    console.error("Error during progress fetch:", error);
+  }
+};
 
 export default router;

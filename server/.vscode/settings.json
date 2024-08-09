@@ -1,0 +1,5 @@
+{
+  "appService.defaultWebAppToDeploy": "undefined/subscriptions/07bcf88e-d0af-4bd9-9fd7-382d7463e9df/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/trekcheck-2024-local-deploy",
+  "appService.deploySubpath": ".",
+  "appService.zipIgnorePattern": ["node_modules{,/**}", ".vscode{,/**}"]
+}

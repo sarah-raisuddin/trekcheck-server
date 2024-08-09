@@ -9,7 +9,7 @@ INSERT INTO trekcheck.Trails (name, address) VALUES
 ('Appalachian Trail', 'Eastern United States'),
 ('Pacific Crest Trail', 'Western United States');
 
-INSERT INTO trekcheck.Checkpoints (checkpoint_order, checkpoint_name, trail_id, latitude, longitude, status) VALUES
+INSERT INTO trekcheck.Checkpoints (checkpoint_order, name, trail_id, latitude, longitude, status) VALUES
 (1, 'urmombeach', 1, 34.0100, -118.4965, 'Open'),
 (2, 'urdadbeach', 1, 35.1234, -117.7890, 'Open'),
 (3, 'urmomsmombeach', 1, 32.7157, -117.1611, 'Open'),
