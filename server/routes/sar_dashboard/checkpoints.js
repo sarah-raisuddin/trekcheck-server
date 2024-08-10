@@ -1,7 +1,7 @@
 import { Router } from "express";
 const router = Router();
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { generatePlaceholders } from "../util.js";
 
 const errMsg500 = "oops";
 const handleError = (res, msg) => {
@@ -37,7 +37,13 @@ router.get("/checkpoints", async (req, res) => {
 });
 
 router.post("/checkpoints", async (req, res) => {
-  const fields = ["checkpoint_order", "trail_id", "latitude", "longitude"];
+  const fields = [
+    "checkpoint_order",
+    "trail_id",
+    "latitude",
+    "longitude",
+    "name",
+  ];
   const values = fields.map((field) => req.body[field]);
 
   if (values.includes(undefined) || values.includes(null)) {

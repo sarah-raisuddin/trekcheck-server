@@ -1,6 +1,6 @@
 import { Router } from "express";
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { generatePlaceholders } from "../util.js";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();

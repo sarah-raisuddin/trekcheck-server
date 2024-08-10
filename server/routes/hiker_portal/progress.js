@@ -1,38 +1,34 @@
 import { Router } from "express";
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { decodeSatelliteData, generatePlaceholders } from "../util.js";
 
 const router = Router();
 
 router.post("/progress", async (req, res) => {
-  if (!req.body.checkpoints) {
-    return res.status(400).json({ message: "Checkpoints data is missing" });
+  if (!req.body.data) {
+    return res.status(400).json({ message: "Satellite data is missing" });
   }
 
-  const checkpoints = req.body.checkpoints;
+  // Decode binary data
+  const hexString = req.body.data;
+  const entries = decodeSatelliteData(hexString);
+
+  if (entries.length === 0) {
+    return res.status(400).json({ message: "No valid entries found" });
+  }
+
+  // Extract the date from the first entry
+  const firstEntry = entries[0];
+  const date = firstEntry ? firstEntry.date : null;
+
+  // Filter out entries with tag_id equal to 0
+  const filteredEntries = entries.filter((entry) => entry.tag_id !== 0);
+
+  const fields = ["pole_id", "time", "tag_id"];
   const values = [];
-  const fields = ["checkpoint_id", "time", "tag_id"];
-
-  checkpoints.forEach((checkpoint) => {
-    const entryValues = [
-      checkpoint.checkpoint_id,
-      checkpoint.time,
-      checkpoint.tag_id,
-    ];
-
-    if (entryValues.includes(undefined) || entryValues.includes(null)) {
-      console.log("Skipping incomplete entry");
-    } else {
-      values.push(...entryValues);
-    }
-  });
-
-  if (values.length === 0) {
-    return res.status(400).json({ message: "No valid checkpoints provided" });
-  }
-
   const numFields = fields.length;
-  const numRows = values.length / numFields;
+  const numRows = filteredEntries.length;
+
   const placeholders = Array(numRows)
     .fill(0)
     .map(
@@ -43,16 +39,27 @@ router.post("/progress", async (req, res) => {
     )
     .join(", ");
 
+  filteredEntries.forEach((entry) => {
+    const time = entry.time || "00:00";
+    const dateStr = date || new Date().toISOString().split("T")[0];
+    const formattedDate = dateStr.split("-").reverse().join("-");
+    const formattedTimestamp = `${formattedDate} ${time.padEnd(5, "0")}:00`;
+    values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
+  });
+
+  console.log(values);
+
   const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
     VALUES ${placeholders}`;
+  console.log(query);
 
   try {
-    const result = await pool.query(query, values);
+    await pool.query(query, values);
     res.status(201).json({
-      message: "Checkpoints added",
+      message: "Checkpoint entries added successfully",
     });
   } catch (error) {
-    console.error("Error adding checkpoints:", error);
+    console.error("Error adding checkpoints entries:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
