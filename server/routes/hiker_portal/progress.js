@@ -1,6 +1,8 @@
 import { Router } from "express";
 import pool from "../../db.js";
 import { decodeSatelliteData, generatePlaceholders } from "../util.js";
+import SendmailTransport from "nodemailer/lib/sendmail-transport/index.js";
+import { sendEmail, sendNotificationEmail } from "../../emailer.js";
 
 const router = Router();
 
@@ -39,15 +41,19 @@ router.post("/progress", async (req, res) => {
     )
     .join(", ");
 
-  filteredEntries.forEach((entry) => {
+  filteredEntries.forEach(async (entry) => {
     const time = entry.time || "00:00";
     const dateStr = date || new Date().toISOString().split("T")[0];
     const formattedDate = dateStr.split("-").reverse().join("-");
     const formattedTimestamp = `${formattedDate} ${time.padEnd(5, "0")}:00`;
     values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
-  });
 
-  console.log(values);
+    try {
+      await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
+    } catch (error) {
+      console.error(`Error sending email for tag ${entry.tag_id}:`, error);
+    }
+  });
 
   const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
     VALUES ${placeholders}`;
@@ -64,13 +70,18 @@ router.post("/progress", async (req, res) => {
   }
 });
 
+router.get("/emailTest", async (req, res) => {
+  console.log("blooding sending it");
+  await sendEmail();
+});
+
 router.get("/progress", async (req, res) => {
-  const { unique_link } = req.query;
-  if (!unique_link) {
+  const { uid } = req.query;
+  console.log(uid);
+  if (!uid) {
     return res.status(400).json({ message: "unique_link is required" });
   }
   try {
-    // Updated SQL query to fetch both trip plan and checkpoint entries
     const query = `
       WITH rfid_cte AS (
         SELECT rfid_tag_uid
@@ -86,7 +97,7 @@ router.get("/progress", async (req, res) => {
         ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
       WHERE tp.progress_tracking_link = $1;`;
 
-    const result = await pool.query(query, [unique_link]);
+    const result = await pool.query(query, [uid]);
 
     const tripPlan = result.rows.length > 0 ? result.rows[0] : null;
     const checkpointEntries = result.rows.filter((row) => row.tag_id); // Adjust based on your data structure

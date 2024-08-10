@@ -105,4 +105,41 @@ router.put("/checkpoints/:id", async (req, res) => {
   }
 });
 
+router.get("/checkpointEntries", async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        ce.entry_id,
+        ce.pole_id,
+        ce.time,
+        ce.tag_id,
+        c.name AS checkpoint_name,
+        t.name AS trail_name,
+        tp.start_date,
+        tp.end_date,
+        u.first_name,
+        u.last_name
+      FROM
+        trekcheck.CheckpointEntries ce
+      JOIN
+        trekcheck.Checkpoints c ON ce.pole_id = c.pole_id
+      JOIN
+        trekcheck.Trails t ON c.trail_id = t.id
+      JOIN
+        trekcheck.TripPlans tp ON ce.tag_id = tp.rfid_tag_uid
+      JOIN
+        trekcheck.Users u ON tp.user_id = u.id
+    `;
+
+    const result = await pool.query(query);
+
+    res.status(200).json({
+      checkpointsEntries: result.rows,
+    });
+  } catch (error) {
+    console.log(error);
+    handleError(res, errMsg500);
+  }
+});
+
 export default router;

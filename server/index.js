@@ -1,6 +1,8 @@
 import express from "express";
 import bp from "body-parser";
 import cors from "cors";
+import "dotenv/config";
+
 const { json } = bp;
 
 const app = express();

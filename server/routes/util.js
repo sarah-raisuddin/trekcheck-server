@@ -1,9 +1,8 @@
-// util
+const BUFFER_SIZE = 50;
+
 export function generatePlaceholders(count) {
   return Array.from({ length: count }, (_, i) => `$${i + 1}`).join(", ");
 }
-
-const BUFFER_SIZE = 50;
 
 export function decodeSatelliteData(hexString) {
   if (typeof hexString !== "string") {
