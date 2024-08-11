@@ -61,12 +61,92 @@ router.post("/trip_plans", async (req, res) => {
 
     res.status(201).json({
       message: "trip plan added",
-      userId: result.rows[0].id,
+      id: result.rows[0].id,
     });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
+});
+
+// get all info for user's trip plan
+router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
+  const userId = parseInt(req.params.user_id, 10);
+  const tripId = parseInt(req.params.trip_id, 10);
+  
+  if (isNaN(userId) || isNaN(tripId)) {
+    return res.status(400).json({ error: "Invalid user ID or trip ID" });
+  }
+
+  try {
+    const tripPlanQuery = `
+      SELECT tp.*, t.name AS trail_name
+      FROM TripPlans tp
+      LEFT JOIN Trails t ON tp.trail_id = t.id
+      WHERE tp.user_id = $1 AND tp.id = $2;
+    `;
+
+    const tripPlanResult = await pool.query(tripPlanQuery, [userId, tripId]);
+
+    if (tripPlanResult.rows.length === 0) {
+      return res.status(404).json({ error: "Trip plan not found" });
+    }
+
+    const tripPlanTrailId = tripPlanResult.rows[0].trail_id;
+    const tripPlanStartPointId = tripPlanResult.rows[0].entry_point;
+    const tripPlanEndPointId = tripPlanResult.rows[0].exit_point;
+
+    const checkpointNameQuery = `SELECT name FROM checkpoints WHERE trail_id = $1 AND id = $2`
+    const startPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanStartPointId])
+    const endPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanEndPointId])
+
+    res.status(200).json({
+      trail: tripPlanResult.rows[0],
+      startPointName: startPointNameResult.rows[0].name,
+      endPointName: endPointNameResult.rows[0].name,
+    });
+
+  } catch (error) {
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
+  const fields = ["entry_point", "exit_point", "start_date", "end_date", "emergency_contact_name", "emergency_contact_number", "rfid_tag_uid"];
+  const values = fields.map((field) => req.body[field]);
+
+  const userId = parseInt(req.params.user_id, 10);
+  const tripId = parseInt(req.params.trip_id, 10);
+
+  if (isNaN(userId) || isNaN(tripId)) {
+    return res.status(400).json({ error: "Invalid user ID or trip ID" });
+  }
+
+  if (values.includes(undefined) || values.includes(null)) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    const setStatement = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+    const query = `UPDATE tripplans SET ${setStatement} WHERE id = $${
+      fields.length + 1} AND user_id = $${ fields.length + 2}`;
+
+    const result = await pool.query(query, [...values, tripId, userId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "trip plan not found" });
+    }
+
+    res.status(200).json({
+      message: "user updated successfully",
+    });
+  } catch (error) {
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+
 });
 
 export default router;

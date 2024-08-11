@@ -10,6 +10,11 @@ const { sign } = webtoken;
 
 const SECRET_KEY = "randomhash";
 
+const errMsg500 = "oops";
+const handleError = (res, msg) => {
+  res.status(500).json({ message: msg });
+};
+
 router.post("/register", async (req, res) => {
   const { password, email, firstName, lastName, number, address } = req.body;
   if (!password || !email || !firstName || !lastName) {
@@ -81,6 +86,64 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Return user account details for edit account display
+router.get("/accountDetails/:id", async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: "Invalid user ID" });
+  }
+
+  try {
+    const userQuery = `SELECT * FROM users WHERE id = $1`;
+    const userResult = await pool.query(userQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({
+      email: userResult.rows[0].email,
+      first_name: userResult.rows[0].first_name,
+      last_name: userResult.rows[0].last_name,
+    });
+  } catch (error) {
+    console.log(error);
+    handleError(res, errMsg500);
+  }
+});
+
+// updates user first name and last name
+router.put("/updateAccount/:id", async (req, res) => {
+  const fields = ["first_name", "last_name"];
+  const values = fields.map((field) => req.body[field]);
+  const userId = parseInt(req.params.id, 10);
+
+  if (values.includes(undefined) || values.includes(null)) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    const setStatement = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+    const query = `UPDATE users SET ${setStatement} WHERE id = $${
+      fields.length + 1
+    }`;
+
+    const result = await pool.query(query, [...values, userId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "user not found" });
+    }
+
+    res.status(200).json({
+      message: "user updated successfully",
+    });
+  } catch (error) {
+    handleError(res, errMsg500);
   }
 });
 
