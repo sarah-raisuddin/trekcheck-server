@@ -2,7 +2,7 @@ import { Router } from "express";
 import pkg from "bcryptjs";
 import webtoken from "jsonwebtoken";
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { generatePlaceholders } from "../util.js";
 
 const { hash, compare } = pkg;
 const router = Router();

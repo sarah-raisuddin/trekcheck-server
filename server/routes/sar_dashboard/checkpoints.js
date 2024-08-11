@@ -1,7 +1,7 @@
 import { Router } from "express";
 const router = Router();
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { generatePlaceholders } from "../util.js";
 
 const errMsg500 = "oops";
 const handleError = (res, msg) => {
@@ -37,7 +37,13 @@ router.get("/checkpoints", async (req, res) => {
 });
 
 router.post("/checkpoints", async (req, res) => {
-  const fields = ["checkpoint_order", "trail_id", "latitude", "longitude"];
+  const fields = [
+    "checkpoint_order",
+    "trail_id",
+    "latitude",
+    "longitude",
+    "name",
+  ];
   const values = fields.map((field) => req.body[field]);
 
   if (values.includes(undefined) || values.includes(null)) {
@@ -95,6 +101,43 @@ router.put("/checkpoints/:id", async (req, res) => {
       message: "Checkpoint updated successfully",
     });
   } catch (error) {
+    handleError(res, errMsg500);
+  }
+});
+
+router.get("/checkpointEntries", async (req, res) => {
+  try {
+    const query = `
+      SELECT
+        ce.entry_id,
+        ce.pole_id,
+        ce.time,
+        ce.tag_id,
+        c.name AS checkpoint_name,
+        t.name AS trail_name,
+        tp.start_date,
+        tp.end_date,
+        u.first_name,
+        u.last_name
+      FROM
+        trekcheck.CheckpointEntries ce
+      JOIN
+        trekcheck.Checkpoints c ON ce.pole_id = c.pole_id
+      JOIN
+        trekcheck.Trails t ON c.trail_id = t.id
+      JOIN
+        trekcheck.TripPlans tp ON ce.tag_id = tp.rfid_tag_uid
+      JOIN
+        trekcheck.Users u ON tp.user_id = u.id
+    `;
+
+    const result = await pool.query(query);
+
+    res.status(200).json({
+      checkpointsEntries: result.rows,
+    });
+  } catch (error) {
+    console.log(error);
     handleError(res, errMsg500);
   }
 });

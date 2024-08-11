@@ -1,6 +1,6 @@
 import { Router } from "express";
 import pool from "../../db.js";
-import generatePlaceholders from "../util.js";
+import { generatePlaceholders } from "../util.js";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
@@ -143,10 +143,37 @@ router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
       message: "user updated successfully",
     });
   } catch (error) {
+      console.error("Error :", error);
+      res.status(500).json({ message: "Internal server error" });
+  } 
+});
+
+router.put("/archive_trip_plan", async (req, res) => {
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ message: "id is required" });
+  }
+
+  try {
+    const query = `
+      UPDATE TripPlans
+      SET archived = true
+      WHERE id = $1;
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Trip plan not found" });
+    }
+
+    res.status(200).json({ message: "Trip plan archived successfully" });
+  } 
+  catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
   }
-
 });
 
 export default router;

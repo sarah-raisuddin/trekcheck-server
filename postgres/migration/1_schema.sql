@@ -25,6 +25,7 @@ CREATE TABLE trekcheck.Trails (
 
 CREATE TABLE trekcheck.Checkpoints (
     id SERIAL PRIMARY KEY,
+    pole_id INT UNIQUE,
     checkpoint_order INT,
     name VARCHAR(255),
     trail_id INT,
@@ -56,8 +57,8 @@ CREATE TABLE trekcheck.TripPlans (
 
 CREATE TABLE trekcheck.CheckpointEntries (
     entry_id SERIAL PRIMARY KEY,
-    checkpoint_id INT,
+    pole_id INT,
     time TIMESTAMP,
     tag_id VARCHAR(255),
-    FOREIGN KEY (checkpoint_id) REFERENCES trekcheck.Checkpoints(id)
+    FOREIGN KEY (pole_id) REFERENCES trekcheck.Checkpoints(pole_id)
 );
