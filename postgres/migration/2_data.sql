@@ -19,3 +19,6 @@ INSERT INTO trekcheck.TripPlans (user_id, start_date, end_date, trail_id, entry_
 (1, '2024-07-01 08:00:00', '2024-07-15 18:00:00', 1, 1, 2, 'Alice Doe', '123-456-7890', 'alice.doe@example.com', 'http://tracking.example.com/track/001'),
 (2, '2024-07-05 09:00:00', '2024-07-20 19:00:00', 1, 3, 4, 'Bob Smith', '987-654-3210', 'bob.smith@example.com', 'http://tracking.example.com/track/002');
 
+INSERT INTO trekcheck.Bugs (reportID, submittedDate, bugDescription ) VALUES 
+(1, '2024-07-01', "button on edit account not working"),
+(2, '2024-07-08', "cannot view progress on mobile");
