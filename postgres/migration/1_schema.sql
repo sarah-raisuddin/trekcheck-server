@@ -14,7 +14,8 @@ CREATE TABLE trekcheck.Users (
     email VARCHAR(255) UNIQUE,
     first_name VARCHAR(255),
     last_name VARCHAR(255),
-    password VARCHAR(255)
+    password VARCHAR(255),
+    rfid_tag_uid VARCHAR(255) UNIQUE
 );
 
 CREATE TABLE trekcheck.Trails (
@@ -46,7 +47,6 @@ CREATE TABLE trekcheck.TripPlans (
     emergency_contact_name VARCHAR(255),
     emergency_contact_number VARCHAR(15), 
     emergency_contact_email VARCHAR(255),
-    rfid_tag_uid VARCHAR(255),
     progress_tracking_link VARCHAR(255) UNIQUE,
     archived BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
