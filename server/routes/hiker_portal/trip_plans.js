@@ -80,6 +80,7 @@ router.post("/trip_plans", async (req, res) => {
     "emergency_contact_name",
     "emergency_contact_number",
     "rfid_tag_uid",
+    "additional_notes",
   ];
 
   const values = [

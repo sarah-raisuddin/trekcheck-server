@@ -14,7 +14,8 @@ CREATE TABLE trekcheck.Users (
     email VARCHAR(255) UNIQUE,
     first_name VARCHAR(255),
     last_name VARCHAR(255),
-    password VARCHAR(255)
+    password VARCHAR(255),
+    rfid_tag_uid VARCHAR(255) UNIQUE
 );
 
 CREATE TABLE trekcheck.Trails (
@@ -46,13 +47,13 @@ CREATE TABLE trekcheck.TripPlans (
     emergency_contact_name VARCHAR(255),
     emergency_contact_number VARCHAR(15), 
     emergency_contact_email VARCHAR(255),
-    rfid_tag_uid VARCHAR(255),
     progress_tracking_link VARCHAR(255) UNIQUE,
     archived BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
     FOREIGN KEY (entry_point) REFERENCES trekcheck.Checkpoints(id),
     FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id),
-    FOREIGN KEY (trail_id) REFERENCES trekcheck.Trails(id)
+    FOREIGN KEY (trail_id) REFERENCES trekcheck.Trails(id),
+    additional_notes VARCHAR(225)
 );
 
 CREATE TABLE trekcheck.CheckpointEntries (
@@ -62,3 +63,9 @@ CREATE TABLE trekcheck.CheckpointEntries (
     tag_id VARCHAR(255),
     FOREIGN KEY (pole_id) REFERENCES trekcheck.Checkpoints(pole_id)
 );
+
+CREATE TABLE trekcheck.Bugs {
+    reportID serial PRIMARY KEY,
+    submittedDate VARCHAR(225),
+    bugDescription VARCHAR(255)
+}

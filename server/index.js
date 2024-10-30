@@ -29,6 +29,7 @@ import trailRoutes from "./routes/sar_dashboard/trails.js";
 import checkpointRoutes from "./routes/sar_dashboard/checkpoints.js";
 import tripPlanRoutes from "./routes/hiker_portal/trip_plans.js";
 import progressRoutes from "./routes/hiker_portal/progress.js";
+import bugRoutes from "./routes/hiker_portal/bugs.js";
 
 const port = process.env.PORT || 3000;
 
@@ -40,5 +41,10 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 // Mount routes
-app.use("/hiker_portal", [userRoutes, tripPlanRoutes, progressRoutes]); // Prefix all routes in userRoutes with '/hiker_portal'
+app.use("/hiker_portal", [
+  userRoutes,
+  tripPlanRoutes,
+  progressRoutes,
+  bugRoutes,
+]); // Prefix all routes in userRoutes with '/hiker_portal'
 app.use("/sar_dashboard", [trailRoutes, sarUserRoutes, checkpointRoutes]);
