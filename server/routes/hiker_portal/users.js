@@ -73,7 +73,7 @@ router.post("/login", async (req, res) => {
 
     // Generate JWT
     const token = sign(
-      { userId: user.id, username: user.username },
+      { userId: user.id, username: user.username, firstName: user.first_name },
       SECRET_KEY,
       { expiresIn: "1h" }
     );
@@ -90,14 +90,25 @@ router.post("/login", async (req, res) => {
 });
 
 // Return user account details for edit account display
-router.get("/accountDetails/:id", async (req, res) => {
-  const userId = parseInt(req.params.id, 10);
+router.get("/accountDetails", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
 
-  if (isNaN(userId)) {
-    return res.status(400).json({ error: "Invalid user ID" });
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
   }
 
   try {
+    const decodedToken = webtoken.verify(token, SECRET_KEY);
+    const userId = decodedToken.userId;
+    console.log("userID: ", userId);
+
     const userQuery = `SELECT * FROM users WHERE id = $1`;
     const userResult = await pool.query(userQuery, [userId]);
 
@@ -117,10 +128,25 @@ router.get("/accountDetails/:id", async (req, res) => {
 });
 
 // updates user first name and last name
-router.put("/updateAccount/:id", async (req, res) => {
+router.put("/updateAccount", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  const decoded = webtoken.verify(token, SECRET_KEY);
+  const userId = decoded.userId;
+
   const fields = ["first_name", "last_name"];
   const values = fields.map((field) => req.body[field]);
-  const userId = parseInt(req.params.id, 10);
 
   if (values.includes(undefined) || values.includes(null)) {
     return res.status(400).json({ message: "All fields are required" });

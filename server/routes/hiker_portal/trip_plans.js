@@ -2,15 +2,32 @@ import { Router } from "express";
 import pool from "../../db.js";
 import { generatePlaceholders } from "../util.js";
 import { v4 as uuidv4 } from "uuid";
+import webtoken from "jsonwebtoken";
+
+const SECRET_KEY = "randomhash";
 
 const router = Router();
 
 router.get("/trip_plans", async (req, res) => {
-  const { user_id } = req.query;
-  if (!user_id) {
-    return res.status(400).json({ message: "user_id is required" });
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
   }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  // TODO: remove userID from request params
   try {
+    const decodedToken = webtoken.verify(token, SECRET_KEY);
+    const user_id = decodedToken.userId;
+    console.log("userID: ", user_id);
+
     const query = `
       SELECT tp.*, t.name AS trail_name
       FROM TripPlans tp
@@ -30,6 +47,29 @@ router.get("/trip_plans", async (req, res) => {
 });
 
 router.post("/trip_plans", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  let decoded;
+  try {
+    decoded = webtoken.verify(token, SECRET_KEY);
+  } catch (error) {
+    console.log("Invalid token", error);
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  const userId = decoded.userId;
+
   const fields = [
     "user_id",
     "start_date",
@@ -42,7 +82,19 @@ router.post("/trip_plans", async (req, res) => {
     "rfid_tag_uid",
   ];
 
-  const values = fields.map((field) => req.body[field]);
+  const values = [
+    userId,
+    req.body.start_date,
+    req.body.end_date,
+    req.body.trail_id,
+    req.body.entry_point,
+    req.body.exit_point,
+    req.body.emergency_contact_name,
+    req.body.emergency_contact_number,
+    req.body.rfid_tag_uid,
+  ];
+
+  console.log(values);
 
   if (values.includes(undefined) || values.includes(null)) {
     return res.status(400).json({ message: "All fields are required" });
@@ -70,10 +122,31 @@ router.post("/trip_plans", async (req, res) => {
 });
 
 // get all info for user's trip plan
-router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
-  const userId = parseInt(req.params.user_id, 10);
+router.get("/trip_plan/:trip_id", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  let decoded;
+  try {
+    decoded = webtoken.verify(token, SECRET_KEY);
+  } catch (error) {
+    console.log("Invalid token", error);
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  const userId = decoded.userId;
   const tripId = parseInt(req.params.trip_id, 10);
-  
+
   if (isNaN(userId) || isNaN(tripId)) {
     return res.status(400).json({ error: "Invalid user ID or trip ID" });
   }
@@ -96,27 +169,61 @@ router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
     const tripPlanStartPointId = tripPlanResult.rows[0].entry_point;
     const tripPlanEndPointId = tripPlanResult.rows[0].exit_point;
 
-    const checkpointNameQuery = `SELECT name FROM checkpoints WHERE trail_id = $1 AND id = $2`
-    const startPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanStartPointId])
-    const endPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanEndPointId])
+    const checkpointNameQuery = `SELECT name FROM checkpoints WHERE trail_id = $1 AND id = $2`;
+    const startPointNameResult = await pool.query(checkpointNameQuery, [
+      tripPlanTrailId,
+      tripPlanStartPointId,
+    ]);
+    const endPointNameResult = await pool.query(checkpointNameQuery, [
+      tripPlanTrailId,
+      tripPlanEndPointId,
+    ]);
 
     res.status(200).json({
       trail: tripPlanResult.rows[0],
       startPointName: startPointNameResult.rows[0].name,
       endPointName: endPointNameResult.rows[0].name,
     });
-
   } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
-router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
-  const fields = ["entry_point", "exit_point", "start_date", "end_date", "emergency_contact_name", "emergency_contact_number", "rfid_tag_uid"];
+router.put("/trip_plan/:trip_id", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  let decoded;
+  try {
+    decoded = webtoken.verify(token, SECRET_KEY);
+  } catch (error) {
+    console.log("Invalid token", error);
+    return res.status(401).json({ message: "Invalid token" });
+  }
+  const userId = decoded.userId;
+
+  const fields = [
+    "entry_point",
+    "exit_point",
+    "start_date",
+    "end_date",
+    "emergency_contact_name",
+    "emergency_contact_number",
+    "rfid_tag_uid",
+  ];
   const values = fields.map((field) => req.body[field]);
 
-  const userId = parseInt(req.params.user_id, 10);
   const tripId = parseInt(req.params.trip_id, 10);
 
   if (isNaN(userId) || isNaN(tripId)) {
@@ -132,7 +239,8 @@ router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
       .map((field, index) => `${field} = $${index + 1}`)
       .join(", ");
     const query = `UPDATE tripplans SET ${setStatement} WHERE id = $${
-      fields.length + 1} AND user_id = $${ fields.length + 2}`;
+      fields.length + 1
+    } AND user_id = $${fields.length + 2}`;
 
     const result = await pool.query(query, [...values, tripId, userId]);
     if (result.rowCount === 0) {
@@ -143,12 +251,25 @@ router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
       message: "user updated successfully",
     });
   } catch (error) {
-      console.error("Error :", error);
-      res.status(500).json({ message: "Internal server error" });
-  } 
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 router.put("/archive_trip_plan", async (req, res) => {
+  // check auth token
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("bunked at auth header");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("bunked at auth token");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
   const { id } = req.body;
 
   if (!id) {
@@ -169,8 +290,7 @@ router.put("/archive_trip_plan", async (req, res) => {
     }
 
     res.status(200).json({ message: "Trip plan archived successfully" });
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
   }
