@@ -52,7 +52,8 @@ CREATE TABLE trekcheck.TripPlans (
     FOREIGN KEY (user_id) REFERENCES trekcheck.Users(id),
     FOREIGN KEY (entry_point) REFERENCES trekcheck.Checkpoints(id),
     FOREIGN KEY (exit_point) REFERENCES trekcheck.Checkpoints(id),
-    FOREIGN KEY (trail_id) REFERENCES trekcheck.Trails(id)
+    FOREIGN KEY (trail_id) REFERENCES trekcheck.Trails(id),
+    additional_notes VARCHAR(225)
 );
 
 CREATE TABLE trekcheck.CheckpointEntries (

@@ -40,6 +40,7 @@ router.post("/trip_plans", async (req, res) => {
     "emergency_contact_name",
     "emergency_contact_number",
     "rfid_tag_uid",
+    "additional_notes",
   ];
 
   const values = fields.map((field) => req.body[field]);
@@ -73,7 +74,7 @@ router.post("/trip_plans", async (req, res) => {
 router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
   const userId = parseInt(req.params.user_id, 10);
   const tripId = parseInt(req.params.trip_id, 10);
-  
+
   if (isNaN(userId) || isNaN(tripId)) {
     return res.status(400).json({ error: "Invalid user ID or trip ID" });
   }
@@ -96,16 +97,21 @@ router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
     const tripPlanStartPointId = tripPlanResult.rows[0].entry_point;
     const tripPlanEndPointId = tripPlanResult.rows[0].exit_point;
 
-    const checkpointNameQuery = `SELECT name FROM checkpoints WHERE trail_id = $1 AND id = $2`
-    const startPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanStartPointId])
-    const endPointNameResult = await pool.query(checkpointNameQuery, [tripPlanTrailId, tripPlanEndPointId])
+    const checkpointNameQuery = `SELECT name FROM checkpoints WHERE trail_id = $1 AND id = $2`;
+    const startPointNameResult = await pool.query(checkpointNameQuery, [
+      tripPlanTrailId,
+      tripPlanStartPointId,
+    ]);
+    const endPointNameResult = await pool.query(checkpointNameQuery, [
+      tripPlanTrailId,
+      tripPlanEndPointId,
+    ]);
 
     res.status(200).json({
       trail: tripPlanResult.rows[0],
       startPointName: startPointNameResult.rows[0].name,
       endPointName: endPointNameResult.rows[0].name,
     });
-
   } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
@@ -113,7 +119,15 @@ router.get("/trip_plan/:user_id/:trip_id", async (req, res) => {
 });
 
 router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
-  const fields = ["entry_point", "exit_point", "start_date", "end_date", "emergency_contact_name", "emergency_contact_number", "rfid_tag_uid"];
+  const fields = [
+    "entry_point",
+    "exit_point",
+    "start_date",
+    "end_date",
+    "emergency_contact_name",
+    "emergency_contact_number",
+    "rfid_tag_uid",
+  ];
   const values = fields.map((field) => req.body[field]);
 
   const userId = parseInt(req.params.user_id, 10);
@@ -132,7 +146,8 @@ router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
       .map((field, index) => `${field} = $${index + 1}`)
       .join(", ");
     const query = `UPDATE tripplans SET ${setStatement} WHERE id = $${
-      fields.length + 1} AND user_id = $${ fields.length + 2}`;
+      fields.length + 1
+    } AND user_id = $${fields.length + 2}`;
 
     const result = await pool.query(query, [...values, tripId, userId]);
     if (result.rowCount === 0) {
@@ -143,9 +158,9 @@ router.put("/trip_plan/:user_id/:trip_id", async (req, res) => {
       message: "user updated successfully",
     });
   } catch (error) {
-      console.error("Error :", error);
-      res.status(500).json({ message: "Internal server error" });
-  } 
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 router.put("/archive_trip_plan", async (req, res) => {
@@ -169,8 +184,7 @@ router.put("/archive_trip_plan", async (req, res) => {
     }
 
     res.status(200).json({ message: "Trip plan archived successfully" });
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("Error :", error);
     res.status(500).json({ message: "Internal server error" });
   }
