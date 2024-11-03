@@ -79,7 +79,6 @@ router.post("/trip_plans", async (req, res) => {
     "exit_point",
     "emergency_contact_name",
     "emergency_contact_number",
-    "rfid_tag_uid",
     "additional_notes",
   ];
 
@@ -92,7 +91,7 @@ router.post("/trip_plans", async (req, res) => {
     req.body.exit_point,
     req.body.emergency_contact_name,
     req.body.emergency_contact_number,
-    req.body.rfid_tag_uid,
+    req.body.additional_notes,
   ];
 
   console.log(values);
@@ -221,7 +220,7 @@ router.put("/trip_plan/:trip_id", async (req, res) => {
     "end_date",
     "emergency_contact_name",
     "emergency_contact_number",
-    "rfid_tag_uid",
+    "additional_notes",
   ];
   const values = fields.map((field) => req.body[field]);
 

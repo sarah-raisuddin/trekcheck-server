@@ -10,15 +10,15 @@ INSERT INTO trekcheck.Trails (name, address) VALUES
 ('Pacific Crest Trail', 'Western United States');
 
 INSERT INTO trekcheck.Checkpoints (checkpoint_order, pole_id, name, trail_id, latitude, longitude, status) VALUES
-(1, 10, 'urmombeach', 1, 34.0100, -118.4965, 'Open'),
-(2, 11, 'urdadbeach', 1, 35.1234, -117.7890, 'Open'),
-(3, 4, 'urmomsmombeach', 1, 32.7157, -117.1611, 'Open'),
-(4, 5, 'meow', 1, 33.1234, -116.7890, 'Open');
+(1, 10, 'China Beach', 1, 34.0100, -118.4965, 'Open'),
+(2, 11, 'Mermaid Beach', 1, 35.1234, -117.7890, 'Open'),
+(3, 4, 'Botanical Beach', 1, 32.7157, -117.1611, 'Open'),
+(4, 5, 'Sombrio Beach', 1, 33.1234, -116.7890, 'Open');
 
 INSERT INTO trekcheck.TripPlans (user_id, start_date, end_date, trail_id, entry_point, exit_point, emergency_contact_name, emergency_contact_number, emergency_contact_email, progress_tracking_link) VALUES
 (1, '2024-07-01 08:00:00', '2024-07-15 18:00:00', 1, 1, 2, 'Alice Doe', '123-456-7890', 'alice.doe@example.com', 'http://tracking.example.com/track/001'),
 (2, '2024-07-05 09:00:00', '2024-07-20 19:00:00', 1, 3, 4, 'Bob Smith', '987-654-3210', 'bob.smith@example.com', 'http://tracking.example.com/track/002');
 
-INSERT INTO trekcheck.Bugs (reportID, submittedDate, bugDescription ) VALUES 
-(1, '2024-07-01', "button on edit account not working"),
-(2, '2024-07-08', "cannot view progress on mobile");
+INSERT INTO trekcheck.Bugs (submittedDate, bugDescription ) VALUES 
+('2024-07-01', "button on edit account not working"),
+('2024-07-08', "cannot view progress on mobile");

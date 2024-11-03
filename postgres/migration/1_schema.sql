@@ -64,8 +64,8 @@ CREATE TABLE trekcheck.CheckpointEntries (
     FOREIGN KEY (pole_id) REFERENCES trekcheck.Checkpoints(pole_id)
 );
 
-CREATE TABLE trekcheck.Bugs {
+CREATE TABLE trekcheck.Bugs (
     reportID serial PRIMARY KEY,
     submittedDate VARCHAR(225),
     bugDescription VARCHAR(255)
-}
+)
