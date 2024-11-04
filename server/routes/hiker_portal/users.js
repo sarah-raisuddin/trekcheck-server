@@ -181,7 +181,7 @@ router.put("/updateAccount", async (req, res) => {
   }
 });
 
-// checks if a tag is already linked to a user
+// Checks if a tag is already linked to a user
 router.post("/check-tag", async (req, res) => {
   const { rfid_tag_uid } = req.body;
 
@@ -190,7 +190,6 @@ router.post("/check-tag", async (req, res) => {
   }
 
   try {
-    // Query to check if the RFID tag exists
     const query = "SELECT id FROM users WHERE rfid_tag_uid = $1";
     const result = await pool.query(query, [rfid_tag_uid]);
 
@@ -201,6 +200,29 @@ router.post("/check-tag", async (req, res) => {
     }
   } catch (error) {
     console.error("Error checking RFID tag:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Checks if an email is already in use
+router.post("/check-email", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const query = "SELECT id FROM users WHERE email = $1";
+    const result = await pool.query(query, [email]);
+
+    if (result.rows.length > 0) {
+      res.status(200).json({ isEmailLinked: true });
+    } else {
+      res.status(200).json({ isEmailLinked: false });
+    }
+  } catch (error) {
+    console.error("Error checking email:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
