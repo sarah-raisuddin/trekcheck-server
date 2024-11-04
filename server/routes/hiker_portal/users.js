@@ -16,14 +16,20 @@ const handleError = (res, msg) => {
 };
 
 router.post("/register", async (req, res) => {
-  const { password, email, firstName, lastName, number, address } = req.body;
-  if (!password || !email || !firstName || !lastName) {
+  const { password, email, firstName, lastName, tagId } = req.body;
+
+  console.log(req.body);
+  if (!password || !email || !firstName || !lastName || !tagId) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  const fields = ["email", "first_name", "last_name", "password"];
-  number && fields.push("number");
-  address && fields.push("address");
+  const fields = [
+    "email",
+    "first_name",
+    "last_name",
+    "password",
+    "rfid_tag_uid",
+  ];
   const placeholders = generatePlaceholders(fields.length);
 
   try {
@@ -36,6 +42,7 @@ router.post("/register", async (req, res) => {
       firstName,
       lastName,
       hashedPassword,
+      tagId,
     ]);
 
     res.status(201).json({
@@ -120,6 +127,7 @@ router.get("/accountDetails", async (req, res) => {
       email: userResult.rows[0].email,
       first_name: userResult.rows[0].first_name,
       last_name: userResult.rows[0].last_name,
+      tag_id: userResult.rows[0].rfid_tag_uid,
     });
   } catch (error) {
     console.log(error);
@@ -170,6 +178,30 @@ router.put("/updateAccount", async (req, res) => {
     });
   } catch (error) {
     handleError(res, errMsg500);
+  }
+});
+
+// checks if a tag is already linked to a user
+router.post("/check-tag", async (req, res) => {
+  const { rfid_tag_uid } = req.body;
+
+  if (!rfid_tag_uid) {
+    return res.status(400).json({ message: "RFID tag ID is required" });
+  }
+
+  try {
+    // Query to check if the RFID tag exists
+    const query = "SELECT id FROM users WHERE rfid_tag_uid = $1";
+    const result = await pool.query(query, [rfid_tag_uid]);
+
+    if (result.rows.length > 0) {
+      res.status(200).json({ isLinked: true });
+    } else {
+      res.status(200).json({ isLinked: false });
+    }
+  } catch (error) {
+    console.error("Error checking RFID tag:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
