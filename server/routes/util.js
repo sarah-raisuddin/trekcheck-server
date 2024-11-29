@@ -1,39 +1,62 @@
+const encryptionKey = 0xaa;
 const BUFFER_SIZE = 50;
 
 export function generatePlaceholders(count) {
   return Array.from({ length: count }, (_, i) => `$${i + 1}`).join(", ");
 }
 
+export function decryptBuffer(buffer, key) {
+  for (let i = 0; i < buffer.length; i++) {
+    buffer[i] ^= key;
+  }
+}
+
 export function decodeSatelliteData(hexString) {
   if (typeof hexString !== "string") {
-    throw new TypeError("The first argument must be a string");
+    throw new TypeError("Input must be a string.");
   }
 
   const buffer = Buffer.from(hexString, "hex");
-  const index = Math.min(buffer.length, BUFFER_SIZE);
 
-  let entries = [];
+  if (buffer.length < BUFFER_SIZE) {
+    throw new Error("Buffer size is smaller than expected.");
+  }
 
-  if (index > 0) {
-    const checkpointId = buffer[0];
-    const year = buffer[3] * 100 + buffer[4];
-    const date = `${String(buffer[1]).padStart(2, "0")}-${String(
-      buffer[2]
-    ).padStart(2, "0")}-${year}`;
+  decryptBuffer(buffer, encryptionKey);
 
-    for (let i = 5; i < index - 2; i += 3) {
-      if (i + 2 < index - 1) {
-        entries.push({
-          pole_id: checkpointId,
-          time: `${String(buffer[i + 1]).padStart(2, "0")}:${String(
-            buffer[i + 2]
-          ).padStart(2, "0")}`,
-          tag_id: buffer[i],
-          date: date,
-        });
-      }
+  const entries = [];
+  let batteryPercentage = null;
+
+  const pole_id = buffer[0];
+
+  const day = buffer[1];
+  const month = buffer[2];
+  const year = buffer[3] * 100 + buffer[4];
+  const date = `${String(day).padStart(2, "0")}-${String(month).padStart(
+    2,
+    "0"
+  )}-${year}`;
+
+  for (let i = 5; i < BUFFER_SIZE - 1; i += 4) {
+    if (i + 3 < BUFFER_SIZE - 1 && buffer[i] !== 0) {
+      const tag_id = buffer[i] | (buffer[i + 1] << 8);
+
+      const hour = buffer[i + 2];
+      const minute = buffer[i + 3];
+
+      entries.push({
+        pole_id,
+        tag_id,
+        date,
+        time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(
+          2,
+          "0"
+        )}`,
+      });
     }
   }
 
-  return entries;
+  batteryPercentage = buffer[BUFFER_SIZE - 1];
+  console.log(entries.length);
+  return { entries, batteryPercentage };
 }
