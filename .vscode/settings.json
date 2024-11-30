@@ -1,0 +1,4 @@
+{
+  "appService.defaultWebAppToDeploy": "/subscriptions/1b23672f-b2ac-41a1-a549-25eb85b5c661/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/trekcheck-server",
+  "appService.deploySubpath": "server"
+}

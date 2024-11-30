@@ -14,7 +14,7 @@ router.post("/bug", async (req, res) => {
 
   try {
     const placeholders = generatePlaceholders(fields.length);
-    const query = `INSERT INTO trekcheck.Bugs (${fields.join(
+    const query = `INSERT INTO Bugs (${fields.join(
       ", "
     )}) VALUES (${placeholders}) RETURNING reportID`;
     const result = await pool.query(query, values);
