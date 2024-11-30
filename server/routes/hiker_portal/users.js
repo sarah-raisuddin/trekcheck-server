@@ -181,6 +181,46 @@ router.put("/updateAccount", async (req, res) => {
   }
 });
 
+// Delete user account
+router.delete("/deleteAccount", async (req, res) => {
+  const authorizationHeader = req.headers["authorization"];
+  if (!authorizationHeader) {
+    console.log("Authorization header not found");
+    return res.status(401).json({ message: "Authorization header not found" });
+  }
+
+  const token = authorizationHeader.split(" ")[1];
+  if (!token) {
+    console.log("Authorization token not found");
+    return res.status(401).json({ message: "Authorization token not found" });
+  }
+
+  try {
+    const decoded = webtoken.verify(token, SECRET_KEY);
+    const userId = decoded.userId;
+
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Delete the user from the database
+    const query = "DELETE FROM users WHERE id = $1 AND email = $2";
+    const result = await pool.query(query, [userId, email]);
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "User not found or email mismatch" });
+    }
+
+    res.status(200).json({ message: "User account deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Checks if a tag is already linked to a user
 router.post("/check-tag", async (req, res) => {
   const { rfid_tag_uid } = req.body;
