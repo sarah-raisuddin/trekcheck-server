@@ -84,25 +84,27 @@ router.get("/progress", async (req, res) => {
     return res.status(400).json({ message: "unique_link is required" });
   }
   try {
-    const query = `
-        WITH rfid_cte AS (
-          SELECT u.rfid_tag_uid
-          FROM TripPlans tp
-          JOIN Users u ON tp.user_id = u.id
-          WHERE tp.progress_tracking_link = $1
-          LIMIT 1
-        )
-        SELECT 
-            tp.*,  
-            ce.*,  
-            u.first_name  
-        FROM TripPlans tp
-        LEFT JOIN CheckpointEntries ce
-            ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
-        JOIN Users u 
-            ON tp.user_id = u.id
-        WHERE tp.progress_tracking_link = $1;
-        `;
+    const query = `WITH rfid_cte AS (
+      SELECT u.rfid_tag_uid
+      FROM trekcheck.TripPlans tp
+      JOIN trekcheck.Users u ON tp.user_id = u.id
+      WHERE tp.progress_tracking_link = $1
+      LIMIT 1
+    )
+    SELECT 
+        tp.*,  
+        ce.*,  
+        u.first_name  
+    FROM trekcheck.TripPlans tp
+    LEFT JOIN trekcheck.CheckpointEntries ce
+        ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
+    LEFT JOIN trekcheck.Checkpoints cp
+        ON ce.pole_id = cp.pole_id
+        AND cp.trail_id = tp.trail_id
+    JOIN trekcheck.Users u 
+        ON tp.user_id = u.id
+    WHERE tp.progress_tracking_link = $1;
+`;
 
     const result = await pool.query(query, [uid]);
 
