@@ -1,7 +1,6 @@
 import { Router } from "express";
 import pool from "../../db.js";
 import { decodeSatelliteData, generatePlaceholders } from "../util.js";
-import SendmailTransport from "nodemailer/lib/sendmail-transport/index.js";
 import { sendEmail, sendNotificationEmail } from "../../emailer.js";
 
 const router = Router();
@@ -11,6 +10,7 @@ router.post("/progress", async (req, res) => {
     return res.status(400).json({ message: "Satellite data is missing" });
   }
 
+  console.log("in the progress function");
   const hexString = req.body.data;
   const decodedData = decodeSatelliteData(hexString);
 
@@ -43,33 +43,35 @@ router.post("/progress", async (req, res) => {
     const formattedDate = dateStr.split("-").reverse().join("-");
     const formattedTimestamp = `${formattedDate} ${time.padEnd(5, "0")}:00`;
     values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
+    console.log("trying to senddd");
 
     console.log(filteredEntries.length);
 
-    // try {
-    //   await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
-    // } catch (error) {
-    //   console.error(`Error sending email for tag ${entry.tag_id}:`, error);
-    // }
+    try {
+      console.log("sending notification email");
+      await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
+    } catch (error) {
+      console.error(`Error sending email for tag ${entry.tag_id}:`, error);
+    }
   });
 
-  const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
-    VALUES ${placeholders}`;
+  // const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
+  //   VALUES ${placeholders}`;
 
-  const updateCheckpointQuery = `UPDATE Checkpoints
-  SET battery_percentage = $1 
-  WHERE pole_id = $2`;
+  // const updateCheckpointQuery = `UPDATE Checkpoints
+  // SET battery_percentage = $1
+  // WHERE pole_id = $2`;
 
-  try {
-    await pool.query(query, values);
-    await pool.query(updateCheckpointQuery, [battery_percentage, pole_id]);
-    res.status(201).json({
-      message: "Checkpoint entries added successfully",
-    });
-  } catch (error) {
-    console.error("Error adding checkpoints entries:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+  // try {
+  //   await pool.query(query, values);
+  //   await pool.query(updateCheckpointQuery, [battery_percentage, pole_id]);
+  //   res.status(201).json({
+  //     message: "Checkpoint entries added successfully",
+  //   });
+  // } catch (error) {
+  //   console.error("Error adding checkpoints entries:", error);
+  //   res.status(500).json({ message: "Internal server error" });
+  // }
 });
 
 router.get("/emailTest", async (req, res) => {

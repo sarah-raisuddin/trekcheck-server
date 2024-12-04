@@ -29,10 +29,16 @@ export const sendEmail = async (to, subject, text) => {
 
 export const sendNotificationEmail = async (rfid_tag_uid, pole_id, time) => {
   const emailNotificationQuery = `
-  SELECT tp.emergency_contact_email
-  FROM trekcheck.TripPlans tp
-  JOIN trekcheck.Users u ON tp.user_id = u.id
-  WHERE u.rfid_tag_uid = $1
+    SELECT tp.emergency_contact_email
+    FROM trekcheck.TripPlans tp
+    JOIN trekcheck.Users u ON tp.user_id = u.id
+    WHERE u.rfid_tag_uid = $1
+    AND tp.archived = FALSE
+    AND tp.trail_id = (
+        SELECT cp.trail_id
+        FROM trekcheck.Checkpoints cp
+        WHERE cp.pole_id = $2
+    );
 `;
 
   const checkpointNameQuery = `
@@ -59,8 +65,10 @@ export const sendNotificationEmail = async (rfid_tag_uid, pole_id, time) => {
 
     const emailQueryResult = await pool.query(emailNotificationQuery, [
       rfid_tag_uid,
+      pole_id,
     ]);
     const email = emailQueryResult.rows[0]?.emergency_contact_email;
+    console.log(email);
 
     if (!email) {
       console.error("No email found");
@@ -77,10 +85,12 @@ export const sendNotificationEmail = async (rfid_tag_uid, pole_id, time) => {
     }
 
     // Send the email
-    const subject = "Checkpoint Notification";
-    const text = `${name} reached checkpoint: ${checkpointName} at ${time}`;
+    const subject = "TrekCheck: Checkpoint Notification";
+    const text = `Hiker ${name} reached checkpoint: ${checkpointName} at ${time}.`;
 
-    await transporter.sendMail({
+    console.log("im sending to this emaillll" + email);
+
+    await sgMail.send({
       from: process.env.EMAIL_USER,
       to: email,
       subject,
@@ -88,6 +98,37 @@ export const sendNotificationEmail = async (rfid_tag_uid, pole_id, time) => {
     });
 
     console.log(`Email sent to ${email} for checkpoint ${checkpointName}`);
+  } catch (error) {
+    console.error("Error sending notification email:", error);
+  }
+};
+
+export const sendTrailUpdateEmail = async (trail_id, trail_name) => {
+  console.log("in the trail update function");
+  const emailQuery = `
+   SELECT u.email
+    FROM trekcheck.TripPlans tp
+    JOIN trekcheck.Users u ON tp.user_id = u.id
+    WHERE tp.trail_id = $1
+    AND tp.archived = FALSE;
+`;
+
+  try {
+    const result = await pool.query(emailQuery, [trail_id]);
+    // Send the email
+    const subject = "TrekCheck: Trail Updated";
+    const text = `Updates have been made to the ${trail_name} trail. Please review your trip plan accordingly.`;
+
+    await Promise.all(
+      result.rows.map((res) => {
+        sgMail.send({
+          from: process.env.EMAIL_USER,
+          to: res.email,
+          subject,
+          text,
+        });
+      })
+    );
   } catch (error) {
     console.error("Error sending notification email:", error);
   }

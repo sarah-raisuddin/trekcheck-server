@@ -2,6 +2,7 @@ import { Router } from "express";
 const router = Router();
 import pool from "../../db.js";
 import { generatePlaceholders } from "../util.js";
+import { sendTrailUpdateEmail } from "../../emailer.js";
 
 const errMsg500 = "oops";
 const handleError = (res, msg) => {
@@ -143,22 +144,22 @@ router.post("/checkpoints", async (req, res) => {
   }
 
   try {
-    const placeholders = generatePlaceholders(fields.length);
-    const query = `INSERT INTO checkpoints (${fields.join(
-      ", "
-    )}) VALUES (${placeholders}) RETURNING id`;
-    const result = await pool.query(query, values);
-
-    res.status(201).json({
-      message: "checkpoint added",
-      checkpointId: result.rows[0].id,
-    });
+    // const placeholders = generatePlaceholders(fields.length);
+    // const query = `INSERT INTO checkpoints (${fields.join(
+    //   ", "
+    // )}) VALUES (${placeholders}) RETURNING id`;
+    // const result = await pool.query(query, values);
+    // res.status(201).json({
+    //   message: "checkpoint added",
+    //   checkpointId: result.rows[0].id,
+    // });
   } catch (error) {
     handleError(res, errMsg500);
   }
 });
 
 router.put("/checkpoints/:id", async (req, res) => {
+  console.log("in the checkpoints");
   const fields = [
     "checkpoint_order",
     "trail_id",
@@ -167,25 +168,29 @@ router.put("/checkpoints/:id", async (req, res) => {
     "name",
     "pole_id",
   ];
-  const values = fields.map((field) => req.body[field]);
-  const { id } = req.params;
+  // const values = fields.map((field) => req.body[field]);
+  // const { id } = req.params;
 
-  if (values.includes(undefined) || values.includes(null)) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
+  // if (values.includes(undefined) || values.includes(null)) {
+  //   return res.status(400).json({ message: "All fields are required" });
+  // }
+
+  console.log(req.body["trail_id"]);
 
   try {
-    const setStatement = fields
-      .map((field, index) => `${field} = $${index + 1}`)
-      .join(", ");
-    const query = `UPDATE checkpoints SET ${setStatement} WHERE id = $${
-      fields.length + 1
-    }`;
+    // const setStatement = fields
+    //   .map((field, index) => `${field} = $${index + 1}`)
+    //   .join(", ");
+    // const query = `UPDATE checkpoints SET ${setStatement} WHERE id = $${
+    //   fields.length + 1
+    // }`;
 
-    const result = await pool.query(query, [...values, id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Checkpoint not found" });
-    }
+    // const result = await pool.query(query, [...values, id]);
+    // if (result.rowCount === 0) {
+    //   return res.status(404).json({ message: "Checkpoint not found" });
+    // }
+
+    await sendTrailUpdateEmail(req.body["trail_id"]);
 
     res.status(200).json({
       message: "Checkpoint updated successfully",
