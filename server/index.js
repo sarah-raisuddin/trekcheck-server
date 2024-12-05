@@ -39,10 +39,16 @@ const port = process.env.PORT || 3000;
 app.use((req, res, next) => {
   console.log(`Hey! I got a ${req.method} request to ${req.url}`);
   next(); // Pass the request to the next middleware/route handler
+
+  console.log(`Request from IP: ${req.ip}`);
+
+  console.log(`Request referrer: ${req.get("Referrer")}`);
+
+  console.log(`Request URL: ${req.originalUrl}`);
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello, Azure! i just updated 9.07.");
+  res.send("Hello, Azure! i just updated 9.35.");
 });
 
 app.get("/verify-db", async (req, res) => {

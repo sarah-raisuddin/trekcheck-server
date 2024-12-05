@@ -36,7 +36,8 @@ router.post("/progress", async (req, res) => {
     )
     .join(", ");
 
-  filteredEntries.forEach(async (entry) => {
+  // Process entries asynchronously
+  const processEntries = filteredEntries.map(async (entry) => {
     const time = entry.time || "00:00"; // Default to "00:00" if time is not provided
     const dateStr = entry.date || new Date().toISOString().split("T")[0]; // Use today's date if not provided
     const formattedDate = dateStr.split("-").reverse().join("-");
@@ -72,14 +73,17 @@ router.post("/progress", async (req, res) => {
 
     values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
 
-    console.log(filteredEntries.length);
-
-    // try {
-    //   await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
-    // } catch (error) {
-    //   console.error(`Error sending email for tag ${entry.tag_id}:`, error);
-    // }
+    // Optionally send email in the background (if needed)
+    try {
+      // You can move this to background processing if necessary
+      await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
+    } catch (error) {
+      console.error(`Error sending email for tag ${entry.tag_id}:`, error);
+    }
   });
+
+  // Use Promise.all to wait for all entries to be processed
+  await Promise.all(processEntries);
 
   const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
     VALUES ${placeholders}`;
@@ -89,9 +93,15 @@ router.post("/progress", async (req, res) => {
   WHERE pole_id = $2`;
 
   try {
+    // Execute database queries efficiently
     await pool.query(query, values);
+    console.log("this is what we're sending in" + query + values);
+
+    // Update the checkpoint info
     await pool.query(updateCheckpointQuery, [battery_percentage, pole_id]);
-    res.status(201).json({
+
+    // Send a response immediately
+    res.status(200).json({
       message: "Checkpoint entries added successfully",
     });
   } catch (error) {
