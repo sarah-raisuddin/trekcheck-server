@@ -239,11 +239,14 @@ router.delete("/deleteAccount", async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
+    const deleteTripPlansQuery = "DELETE FROM tripplans WHERE user_id = $1";
+    const result1 = await pool.query(deleteTripPlansQuery, [userId]);
+
     // Delete the user from the database
     const query = "DELETE FROM users WHERE id = $1 AND email = $2";
-    const result = await pool.query(query, [userId, email]);
+    const result2 = await pool.query(query, [userId, email]);
 
-    if (result.rowCount === 0) {
+    if (result2.rowCount === 0) {
       return res
         .status(404)
         .json({ message: "User not found or email mismatch" });
