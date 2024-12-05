@@ -15,42 +15,6 @@ const handleError = (res, msg) => {
   res.status(500).json({ message: msg });
 };
 
-router.delete("/user", async (req, res) => {
-  const { email } = req.body;
-  const query = `
-  BEGIN;
-
-  -- Find the user ID based on email
-  WITH user_to_delete AS (
-    SELECT id FROM Users WHERE email = $1
-  )
-
-  -- Delete related checkpoint entries
-  DELETE FROM CheckpointEntries
-  USING TripPlans, user_to_delete
-  WHERE TripPlans.user_id = user_to_delete.id
-    AND (CheckpointEntries.pole_id = TripPlans.entry_point
-         OR CheckpointEntries.pole_id = TripPlans.exit_point);
-
-  -- Delete trip plans associated with the user
-  DELETE FROM TripPlans
-  USING user_to_delete
-  WHERE TripPlans.user_id = user_to_delete.id;
-
-  -- Delete the user from the Users table
-  DELETE FROM Users
-  WHERE email = $1;
-
-  COMMIT;
-`;
-
-  try {
-    const result = await pool.query(query, [email]);
-  } catch (error) {
-    console.error("Error deleting user data:", error);
-  }
-});
-
 router.post("/register", async (req, res) => {
   const { password, email, firstName, lastName, tagId } = req.body;
 
@@ -188,11 +152,14 @@ router.put("/updateAccount", async (req, res) => {
   const decoded = webtoken.verify(token, SECRET_KEY);
   const userId = decoded.userId;
 
-  const fields = ["first_name", "last_name"];
+  const allFields = ["email", "first_name", "last_name", "rfid_tag_uid"]; // List of possible fields
+  const fields = allFields.filter((field) => field in req.body); // Only include fields in req.body
   const values = fields.map((field) => req.body[field]);
 
-  if (values.includes(undefined) || values.includes(null)) {
-    return res.status(400).json({ message: "All fields are required" });
+  console.log(req.body);
+
+  if (fields.length === 0) {
+    throw new Error("No fields provided for update");
   }
 
   try {
@@ -202,17 +169,17 @@ router.put("/updateAccount", async (req, res) => {
     const query = `UPDATE users SET ${setStatement} WHERE id = $${
       fields.length + 1
     }`;
+    const valuesWithId = [...values, userId];
 
-    const result = await pool.query(query, [...values, userId]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "user not found" });
-    }
+    const result = await pool.query(query, valuesWithId);
+    console.log(query);
+    console.log(valuesWithId);
+    console.log(result[0]);
 
-    res.status(200).json({
-      message: "user updated successfully",
-    });
+    res.status(200).send("User updated successfully");
   } catch (error) {
-    handleError(res, errMsg500);
+    console.error("Error updating user:", error);
+    res.status(500).send("An error occurred while updating the user");
   }
 });
 
@@ -255,7 +222,8 @@ router.delete("/deleteAccount", async (req, res) => {
     res.status(200).json({ message: "User account deleted successfully" });
   } catch (error) {
     console.error("Error deleting user account:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error });
+    x;
   }
 });
 

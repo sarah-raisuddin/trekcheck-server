@@ -256,6 +256,33 @@ router.put("/trip_plan/:trip_id", async (req, res) => {
   }
 });
 
+router.put("/add_emergency_contact/:trip_id", async (req, res) => {
+  const tripId = parseInt(req.params.trip_id, 10);
+  const emergency_email = req.body["emergency_contact_email"];
+
+  console.log(emergency_email);
+
+  try {
+    const query = `
+      UPDATE TripPlans
+      SET emergency_contact_email = $1
+      WHERE id = $2;
+    `;
+
+    const result = await pool.query(query, [emergency_email, tripId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Trip plan not found" });
+    }
+
+    res.status(200).json({ message: "Trip plan updated successfully" });
+    console.log(result.rows[0]);
+  } catch (error) {
+    console.error("Error :", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.put("/archive_trip_plan", async (req, res) => {
   // check auth token
   const authorizationHeader = req.headers["authorization"];

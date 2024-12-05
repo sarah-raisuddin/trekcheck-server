@@ -1,7 +1,6 @@
 import { Router } from "express";
 import pool from "../../db.js";
 import { decodeSatelliteData, generatePlaceholders } from "../util.js";
-import SendmailTransport from "nodemailer/lib/sendmail-transport/index.js";
 import { sendEmail, sendNotificationEmail } from "../../emailer.js";
 
 const router = Router();
@@ -38,10 +37,39 @@ router.post("/progress", async (req, res) => {
     .join(", ");
 
   filteredEntries.forEach(async (entry) => {
-    const time = entry.time || "00:00";
-    const dateStr = entry.date || new Date().toISOString().split("T")[0];
+    const time = entry.time || "00:00"; // Default to "00:00" if time is not provided
+    const dateStr = entry.date || new Date().toISOString().split("T")[0]; // Use today's date if not provided
     const formattedDate = dateStr.split("-").reverse().join("-");
-    const formattedTimestamp = `${formattedDate} ${time.padEnd(5, "0")}:00`;
+
+    // Ensure the time is in a valid format (HH:mm)
+    const [hours, minutes] = time.split(":").map((num) => parseInt(num, 10));
+
+    if (
+      isNaN(hours) ||
+      isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      console.error(`Invalid time value: ${time}`);
+      return; // Skip this entry if the time is invalid
+    }
+
+    // Fix invalid time (e.g., 65 minutes)
+    const date = new Date(`${formattedDate}T${time}:00`);
+    let validMinutes = date.getMinutes();
+
+    // If minutes exceed 59, adjust
+    if (validMinutes >= 60) {
+      date.setMinutes(0);
+      date.setHours(date.getHours() + 1); // Increment the hour
+    }
+
+    // Format the corrected time
+    const fixedTime = date.toISOString().split("T")[1].slice(0, 5);
+    const formattedTimestamp = `${formattedDate} ${fixedTime}:00`;
+
     values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
 
     console.log(filteredEntries.length);
@@ -84,25 +112,27 @@ router.get("/progress", async (req, res) => {
     return res.status(400).json({ message: "unique_link is required" });
   }
   try {
-    const query = `
-        WITH rfid_cte AS (
-          SELECT u.rfid_tag_uid
-          FROM TripPlans tp
-          JOIN Users u ON tp.user_id = u.id
-          WHERE tp.progress_tracking_link = $1
-          LIMIT 1
-        )
-        SELECT 
-            tp.*,  
-            ce.*,  
-            u.first_name  
-        FROM TripPlans tp
-        LEFT JOIN CheckpointEntries ce
-            ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
-        JOIN Users u 
-            ON tp.user_id = u.id
-        WHERE tp.progress_tracking_link = $1;
-        `;
+    const query = `WITH rfid_cte AS (
+      SELECT u.rfid_tag_uid
+      FROM trekcheck.TripPlans tp
+      JOIN trekcheck.Users u ON tp.user_id = u.id
+      WHERE tp.progress_tracking_link = $1
+      LIMIT 1
+    )
+    SELECT 
+        tp.*,  
+        ce.*,  
+        u.first_name  
+    FROM trekcheck.TripPlans tp
+    LEFT JOIN trekcheck.CheckpointEntries ce
+        ON ce.tag_id = (SELECT rfid_tag_uid FROM rfid_cte)
+    LEFT JOIN trekcheck.Checkpoints cp
+        ON ce.pole_id = cp.pole_id
+        AND cp.trail_id = tp.trail_id
+    JOIN trekcheck.Users u 
+        ON tp.user_id = u.id
+    WHERE tp.progress_tracking_link = $1;
+`;
 
     const result = await pool.query(query, [uid]);
 
