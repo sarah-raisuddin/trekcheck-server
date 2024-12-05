@@ -22,7 +22,7 @@ export function decodeSatelliteData(hexString) {
     throw new Error("Buffer size is smaller than expected.");
   }
 
-  decryptBuffer(buffer, encryptionKey);
+  // decryptBuffer(buffer, encryptionKey);
 
   const entries = [];
   let batteryPercentage = null;
@@ -37,9 +37,12 @@ export function decodeSatelliteData(hexString) {
     "0"
   )}-${year}`;
 
+  console.log("this is the pole_id:" + pole_id);
+
   for (let i = 5; i < BUFFER_SIZE - 1; i += 4) {
     if (i + 3 < BUFFER_SIZE - 1 && buffer[i] !== 0) {
       const tag_id = buffer[i] | (buffer[i + 1] << 8);
+      console.log("this is the tag id" + tag_id);
 
       const hour = buffer[i + 2];
       const minute = buffer[i + 3];

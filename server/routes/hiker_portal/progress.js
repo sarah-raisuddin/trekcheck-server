@@ -10,7 +10,6 @@ router.post("/progress", async (req, res) => {
     return res.status(400).json({ message: "Satellite data is missing" });
   }
 
-  console.log("in the progress function");
   const hexString = req.body.data;
   const decodedData = decodeSatelliteData(hexString);
 
@@ -38,40 +37,67 @@ router.post("/progress", async (req, res) => {
     .join(", ");
 
   filteredEntries.forEach(async (entry) => {
-    const time = entry.time || "00:00";
-    const dateStr = entry.date || new Date().toISOString().split("T")[0];
+    const time = entry.time || "00:00"; // Default to "00:00" if time is not provided
+    const dateStr = entry.date || new Date().toISOString().split("T")[0]; // Use today's date if not provided
     const formattedDate = dateStr.split("-").reverse().join("-");
-    const formattedTimestamp = `${formattedDate} ${time.padEnd(5, "0")}:00`;
+
+    // Ensure the time is in a valid format (HH:mm)
+    const [hours, minutes] = time.split(":").map((num) => parseInt(num, 10));
+
+    if (
+      isNaN(hours) ||
+      isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      console.error(`Invalid time value: ${time}`);
+      return; // Skip this entry if the time is invalid
+    }
+
+    // Fix invalid time (e.g., 65 minutes)
+    const date = new Date(`${formattedDate}T${time}:00`);
+    let validMinutes = date.getMinutes();
+
+    // If minutes exceed 59, adjust
+    if (validMinutes >= 60) {
+      date.setMinutes(0);
+      date.setHours(date.getHours() + 1); // Increment the hour
+    }
+
+    // Format the corrected time
+    const fixedTime = date.toISOString().split("T")[1].slice(0, 5);
+    const formattedTimestamp = `${formattedDate} ${fixedTime}:00`;
+
     values.push(entry.pole_id, formattedTimestamp, entry.tag_id);
-    console.log("trying to senddd");
 
     console.log(filteredEntries.length);
 
-    try {
-      console.log("sending notification email");
-      await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
-    } catch (error) {
-      console.error(`Error sending email for tag ${entry.tag_id}:`, error);
-    }
+    // try {
+    //   await sendNotificationEmail(entry.tag_id, entry.pole_id, entry.time);
+    // } catch (error) {
+    //   console.error(`Error sending email for tag ${entry.tag_id}:`, error);
+    // }
   });
 
-  // const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
-  //   VALUES ${placeholders}`;
+  const query = `INSERT INTO CheckpointEntries (${fields.join(", ")})
+    VALUES ${placeholders}`;
 
-  // const updateCheckpointQuery = `UPDATE Checkpoints
-  // SET battery_percentage = $1
-  // WHERE pole_id = $2`;
+  const updateCheckpointQuery = `UPDATE Checkpoints
+  SET battery_percentage = $1 
+  WHERE pole_id = $2`;
 
-  // try {
-  //   await pool.query(query, values);
-  //   await pool.query(updateCheckpointQuery, [battery_percentage, pole_id]);
-  //   res.status(201).json({
-  //     message: "Checkpoint entries added successfully",
-  //   });
-  // } catch (error) {
-  //   console.error("Error adding checkpoints entries:", error);
-  //   res.status(500).json({ message: "Internal server error" });
-  // }
+  try {
+    await pool.query(query, values);
+    await pool.query(updateCheckpointQuery, [battery_percentage, pole_id]);
+    res.status(201).json({
+      message: "Checkpoint entries added successfully",
+    });
+  } catch (error) {
+    console.error("Error adding checkpoints entries:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 router.get("/emailTest", async (req, res) => {

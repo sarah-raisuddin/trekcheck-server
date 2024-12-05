@@ -15,42 +15,6 @@ const handleError = (res, msg) => {
   res.status(500).json({ message: msg });
 };
 
-router.delete("/user", async (req, res) => {
-  const { email } = req.body;
-  const query = `
-  BEGIN;
-
-  -- Find the user ID based on email
-  WITH user_to_delete AS (
-    SELECT id FROM Users WHERE email = $1
-  )
-
-  -- Delete related checkpoint entries
-  DELETE FROM CheckpointEntries
-  USING TripPlans, user_to_delete
-  WHERE TripPlans.user_id = user_to_delete.id
-    AND (CheckpointEntries.pole_id = TripPlans.entry_point
-         OR CheckpointEntries.pole_id = TripPlans.exit_point);
-
-  -- Delete trip plans associated with the user
-  DELETE FROM TripPlans
-  USING user_to_delete
-  WHERE TripPlans.user_id = user_to_delete.id;
-
-  -- Delete the user from the Users table
-  DELETE FROM Users
-  WHERE email = $1;
-
-  COMMIT;
-`;
-
-  try {
-    const result = await pool.query(query, [email]);
-  } catch (error) {
-    console.error("Error deleting user data:", error);
-  }
-});
-
 router.post("/register", async (req, res) => {
   const { password, email, firstName, lastName, tagId } = req.body;
 
@@ -255,7 +219,8 @@ router.delete("/deleteAccount", async (req, res) => {
     res.status(200).json({ message: "User account deleted successfully" });
   } catch (error) {
     console.error("Error deleting user account:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error });
+    x;
   }
 });
 

@@ -15,17 +15,12 @@ const allowedOrigins = [
   "https://sardash.trekcheck.ca",
   "https://hikerportal.trekcheck.ca",
   "https://hikerportal.azurewebsites.net",
+  "https://hiker-portal.azurewebsites.net/",
 ];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
   })
 );
 
@@ -41,8 +36,13 @@ import pool from "./db.js";
 
 const port = process.env.PORT || 3000;
 
+app.use((req, res, next) => {
+  console.log(`Hey! I got a ${req.method} request to ${req.url}`);
+  next(); // Pass the request to the next middleware/route handler
+});
+
 app.get("/", (req, res) => {
-  res.send("Hello, Azure! This is a Node.js application.");
+  res.send("Hello, Azure! i just updated 9.07.");
 });
 
 app.get("/verify-db", async (req, res) => {

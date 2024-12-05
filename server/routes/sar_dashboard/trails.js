@@ -168,27 +168,27 @@ router.put("/checkpoints/:id", async (req, res) => {
     "name",
     "pole_id",
   ];
-  // const values = fields.map((field) => req.body[field]);
-  // const { id } = req.params;
+  const values = fields.map((field) => req.body[field]);
+  const { id } = req.params;
 
-  // if (values.includes(undefined) || values.includes(null)) {
-  //   return res.status(400).json({ message: "All fields are required" });
-  // }
+  if (values.includes(undefined) || values.includes(null)) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
   console.log(req.body["trail_id"]);
 
   try {
-    // const setStatement = fields
-    //   .map((field, index) => `${field} = $${index + 1}`)
-    //   .join(", ");
-    // const query = `UPDATE checkpoints SET ${setStatement} WHERE id = $${
-    //   fields.length + 1
-    // }`;
+    const setStatement = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+    const query = `UPDATE checkpoints SET ${setStatement} WHERE id = $${
+      fields.length + 1
+    }`;
 
-    // const result = await pool.query(query, [...values, id]);
-    // if (result.rowCount === 0) {
-    //   return res.status(404).json({ message: "Checkpoint not found" });
-    // }
+    const result = await pool.query(query, [...values, id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Checkpoint not found" });
+    }
 
     await sendTrailUpdateEmail(req.body["trail_id"]);
 
